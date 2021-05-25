@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <!--The viewport meta tag is used to improve the presentation and behavior of the samples
+      on iOS devices-->
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+    <title></title>
+
+    <link rel="stylesheet" href="http://js.arcgis.com/3.8/js/dojo/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.27/esri/css/esri.css">
+    <link rel="stylesheet" href="api_simulacro1.css"/>
+
+    <script>var dojoConfig = { parseOnLoad: true };</script>
+    <script src="https://js.arcgis.com/3.27/"></script>
+
+    <style>
+       #search {
+            display: block;
+            position: absolute;
+            z-index: 2;
+            top: 10px;
+            right: 10px;
+          }
+    </style>
+    <script>
+
+    var map;
+    var tb;
+    require(["esri/map",
+        "esri/geometry/Extent",
+        "esri/layers/FeatureLayer",
+        "esri/SpatialReference",
+        "esri/dijit/Scalebar",
+        "esri/dijit/Legend",
+        "esri/dijit/BasemapGallery",
+        "esri/dijit/Search",
+        "esri/dijit/OverviewMap",
+        "esri/dijit/PopupTemplate",
+        "esri/tasks/query",
+        "esri/graphic",
+        
+
+        "dojo/on",
+        "dojo/parser",
+
+        "dijit/layout/TabContainer",
+        "dijit/layout/ContentPane",
+        "dijit/layout/BorderContainer",
+        "dijit/TitlePane",
+        "dojo/domReady!"],
+        function(
+          Map,Extent,FeatureLayer,SpatialReference,Scalebar,Legend,BasemapGallery,Search,OverviewMap,PopupTemplate,Query,Graphic,
+          on,parser
+
+        ) {
+
+          // parser.parse()
+
+       
+
+        map = new Map("map", {
+          basemap: "topo",
+          center: [-96, 37.75],
+          zoom: 4
+          // sliderStyle: "small"
+        });
+
+        map.on("load",function(evt){
+          map.resize();
+          map.reposition();
+
+        });
+
+        // Vamos a declarar los popups de la capa de estados con el popup template
+
+        var outfieldsStates = ["state_name", "pop2000", "pop00_sqmi", "st_area(shape)"];
+        var template = new PopupTemplate({
+                  title: "{state_name}",
+                  // determinamos qué queremos que se muestre
+                  description : "La población de {state_name} era en el año 2000 de {pop2000} de habitantes. Con un área de {st_area(shape)}, tenía una densidad de población de {pop00_sqmi}/km2"
+        });
+
+        // Declaramos las capas
+        var counties = new FeatureLayer("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/3",{opacity:0.5});
+        var states = new FeatureLayer("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/2",{
+          
+          outFields: outfieldsStates,
+          // mode: FeatureLayer.MODE_ONDEMAND,
+          // outFields: ["*"],
+          infoTemplate: template
+        });
+        var highways = new FeatureLayer("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/1");
+        var cities = new FeatureLayer("http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/0");
+              
+        // Llamamos las capas al mapa
+        map.addLayers([counties,states,highways,cities]);
+
+        // Declaramos la barra de escala al mapa
+        var scalebar = new Scalebar({
+          map: map,
+          attachTo: "bottom-right"
+        });
+
+        // Declaramos la leyenda
+        var leyenda = new Legend({
+          map: map,
+        },"legendDiv");
+
+        // Declaramos la galeria de mapas
+        var basemapGallery = new BasemapGallery({
+        showArcGISBasemaps: true,
+        map: map
+        }, "basemapGallery");
+        basemapGallery.startup();
+
+        // Declaramos el search
+
+        var search = new Search({
+              map: map
+          }, "search");
+          search.startup();
+
+
+          // Declaramos el overview
+        var vista = new OverviewMap({
+            map: map,
+            visible: true,
+            height: 100,
+            width : 100
+          },"overview");
+          vista.startup();
+
+          on(dojo.byId("progButtonNode"),"click",fQueryEstados);
+        
+        function fQueryEstados(){
+         alert("Evento del botón Seleccionar ciudades");
+
+         var busqueda = dojo.byId("dtb").value;
+         
+         
+
+         var consulta = new Query();
+
+         consulta.where = "state_name ='" +  busqueda +"'"
+
+         states.selectFeatures(consulta,FeatureLayer.SELECTION_NEW);
+
+
+         states.on("selection-complete",centraestado);
+
+        }
+
+        function centraestado(params) {
+          console.log(params)
+          
+          
+          grafico = states.getSelectedFeatures();
+
+          query = grafico[0].geometry.getExtent();
+
+          map.setExtent(query);
+          
+        }
+
+      });
+
+      
+  
+    </script>
+
+  </head>
+
+  <body class="claro">
+    <div id="mainWindow"
+         data-dojo-type="dijit.layout.BorderContainer"
+         data-dojo-props="design:'headline', gutters:false"
+         style="width:100%; height:100%;">
+
+      <div id="header"
+           data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'top'">
+
+        Master GIS ESRI España
+       <div id="subheader">Jose Luis Pastor Aleany</div>
+
+      </div>
+      <div data-dojo-type="dijit.layout.ContentPane" id="leftPane" data-dojo-props="region:'left'">
+        <div data-dojo-type="dijit.layout.TabContainer">
+
+          <div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="title:'Leyenda', selected:true">
+            <div id="legendDiv"></div>
+          </div>
+
+         
+
+        </div>
+      </div>
+
+      <div id="map" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'center'">
+        <div style="position:absolute; right:20px; top:10px; z-Index:999;">
+          <div data-dojo-type="dijit.TitlePane" 
+               data-dojo-props="title:'Switch Basemap', open:false,region:'top'">
+            <div data-dojo-type="dijit.layout.ContentPane" style="width:380px; height:280px; overflow:auto;">
+              <div id="basemapGallery"></div>
+            </div>
+          </div>
+        </div>
+        <div id="search"></div>
+        <div id="overview"></div>
+      </div>
+
+      
+
+      <div id="footer" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'bottom'">
+
+        <label for="dtb">Introduzca el nombre de un estado:</label> <input id="dtb" data-dojo-type="dijit/form/TextBox" value="Washington" />
+        <button id="progButtonNode" type="button">Ir al estado</button>
+      </div>
+
+    </div>
+  </body>
+
+</html>

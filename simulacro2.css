@@ -1,0 +1,15 @@
+html, body{
+    height: 400px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+#divMap1{
+    height: 30%;
+    width: 100%;
+}
+#divMap2{
+    height: 30%;
+    width: 100%;
+}
